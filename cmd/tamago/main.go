@@ -75,17 +75,22 @@ func main() {
 		version = strings.Join(parts, ".")
 	}
 	version = strings.TrimPrefix(version, "v")
-	version = "tamago-go" + version
+	// l4re-go-prj fork branch suffix: pulls in the runtime/goos.SetTLSUser
+	// hook required for non-Linux userspace tamago targets such as L4Re
+	// native tasks. See third_party/tamago/user/l4re for the consumer of
+	// the hook.
+	branch := "tamago" + version + "-l4re"
+	cacheKey := "tamago-go" + version + "-l4re"
 
-	root, err := goroot(version)
+	root, err := goroot(cacheKey)
 	if err != nil {
 		log.Fatalf("tamago: %v", err)
 	}
 
 	gobin := filepath.Join(root, "bin", "go"+exe())
 	if _, err := os.Stat(gobin); err != nil {
-		fmt.Printf("tamago: installing %s...\n", version)
-		if err := install(root, version); err != nil {
+		fmt.Printf("tamago: installing %s...\n", cacheKey)
+		if err := install(root, branch); err != nil {
 			log.Fatalf("tamago: %v", err)
 		}
 	}
@@ -93,12 +98,12 @@ func main() {
 	runGo(root)
 }
 
-func install(root, tag string) error {
+func install(root, branch string) error {
 	if err := os.MkdirAll(root, 0755); err != nil {
 		return fmt.Errorf("failed to create repository: %v", err)
 	}
 
-	cmd := exec.Command("git", "clone", "--depth=1", "--branch="+tag, "https://github.com/usbarmory/tamago-go", root)
+	cmd := exec.Command("git", "clone", "--depth=1", "--branch="+branch, "https://github.com/mynetz/tamago-go", root)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	cmd.Dir = root

@@ -55,6 +55,25 @@ var (
 // first instruction set executed.
 func CPUinit()
 
+// SetTLSUser installs the amd64 FS base register for the current thread,
+// for use as the Go runtime's thread-local storage base.
+//
+// Invoked by runtime.settls's userspace path (CS&3 != 0) when the Go
+// runtime is being brought up under a supervising kernel that does not
+// expose the WRMSR instruction. The base argument is the value to install
+// (already biased by +8 per the Go ELF -8(FS) convention).
+//
+// The hook runs very early: the Go runtime is not yet up, FS_BASE is
+// whatever the supervising kernel left it at thread creation, and no
+// goroutine state (g, m) is reachable through TLS. Implementations must
+// be defined using Go's Assembler (NOSPLIT, no Go calls) and may clobber
+// only registers caller-saved across SYSCALL (RCX, R11) plus those used
+// to issue the request.
+//
+// On amd64 this hook is mandatory under GOOSPKG; non-amd64 architectures
+// install TLS via dedicated registers and do not require it.
+func SetTLSUser(base uintptr)
+
 // Hwinit0 takes care of the lower level initialization triggered before
 // runtime setup (pre World start).
 //
