@@ -52,6 +52,7 @@ definition for the `runtime/goos` overlay:
 
 * `linkramstart`: exclude `ramStart` from `mem.go`
 * `linkcpuinit`: exclude `cpuinit` from `init.s`
+* `linksysreg`: exclude `sysReg` (runtime/goos.SysReg) from `sysreg.s`
 
 License
 =======

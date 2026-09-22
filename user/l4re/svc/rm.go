@@ -11,10 +11,12 @@ package svc
 import "github.com/usbarmory/tamago/user/l4re/sys"
 
 // Region map flags (L4Re::Rm::F, l4re/include/rm).
+// Region rights are memory flexpage rights (L4_FPAGE_*), not capability
+// rights: X = 1, W = 2, R = 4.
 const (
 	RmR   uint32 = 0x4 // readable
-	RmW   uint32 = 0x1 // writable
-	RmX   uint32 = 0x2 // executable
+	RmW   uint32 = 0x2 // writable
+	RmX   uint32 = 0x1 // executable
 	RmRW  uint32 = RmR | RmW
 	RmRWX uint32 = RmRW | RmX
 
@@ -26,6 +28,9 @@ const (
 
 // rmOpAttach is the opcode of L4Re::Rm::attach (first entry of Rm::Rpcs).
 const rmOpAttach = 0
+
+// PageShift is log2 of the page size (L4_PAGESHIFT).
+const PageShift = 12
 
 // Attach maps dataspace `ds` into the task's address space through the
 // region map of the initial environment and returns the start address of
@@ -41,7 +46,7 @@ const rmOpAttach = 0
 //	byte 16: ulong     size
 //	byte 24: uint32    flags
 //	byte 32: uint64    offset in dataspace
-//	byte 40: uint8     alignment (log2)
+//	byte 40: uint8     alignment (log2, >= L4_PAGESHIFT with RmSearchAddr)
 //	byte 48: cap idx   client_cap (Opt, the local dataspace selector)
 //	byte 56: ulong     name length (1)
 //	byte 64: char      name ("")
@@ -71,7 +76,7 @@ func Attach(start uintptr, size uint64, flags uint32, ds Cap) (uintptr, sys.Errn
 	off = sys.Align(off, 8)
 	mr[off/8] = 0 // dataspace offset
 	off += 8
-	off = sys.PutU8(mr, off, 0) // alignment
+	off = sys.PutU8(mr, off, PageShift) // alignment (page granularity)
 	off = sys.Align(off, 8)
 	mr[off/8] = uint64(ds) // client_cap
 	off += 8

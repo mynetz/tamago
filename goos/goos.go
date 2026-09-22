@@ -73,6 +73,19 @@ func CPUInit()
 // The Linux user space implementation performs arch_prctl(ARCH_SET_FS).
 func SetTLS(base uintptr)
 
+// SysReg returns the value of the CPU identification system register reg,
+// used by the runtime to detect optional instruction set features.
+//
+// It is invoked only on architectures whose feature registers are
+// privileged: on arm64 the ID_AA64ISAR0_EL1, ID_AA64ISAR1_EL1 and
+// ID_AA64PFR0_EL1 registers (see the ID_AA64* constants) are readable at
+// EL1 but trap at EL0, so an implementation running in user space must
+// obtain them from its supervising kernel or return 0 to disable optional
+// features. Bare metal implementations read the register directly.
+//
+// It is called before the World is started and must not allocate.
+func SysReg(reg uint) uint64
+
 // Hwinit0 takes care of the lower level initialization triggered before
 // runtime setup (pre World start).
 //

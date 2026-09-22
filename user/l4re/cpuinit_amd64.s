@@ -65,6 +65,16 @@ done:
 	LEAQ	·bootStack+(16*1024-16)(SB), SP
 	ANDQ	$~15, SP
 
+	// Calling Go from assembly goes through a compiler generated ABI0
+	// wrapper that loads g from TLS (-8(FS)). Install a provisional TLS
+	// base pointing at bootTLS so that g reads as &bootG (a zeroed
+	// stand-in that nosplit code never dereferences beyond the stack
+	// guard). The runtime installs the real base for m0 later on.
+	LEAQ	·bootG(SB), AX
+	MOVQ	AX, ·bootTLS(SB)
+	LEAQ	·bootTLS+8(SB), DI
+	CALL	setTLS(SB)
+
 	CALL	·earlyInit(SB)
 
 	// runtime/goos.RamStart/RamSize describe the heap region

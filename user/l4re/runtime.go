@@ -67,6 +67,16 @@ var ramStackOffset uint64 = 0x1000
 // nosplit and shallow, the size is generous.
 var bootStack [16 * 1024]byte
 
+// bootG stands in for the current goroutine while earlyInit runs; on
+// amd64 the ABI0 wrapper of earlyInit loads it from TLS. It is never
+// dereferenced by nosplit code beyond the stack guard, which a zeroed
+// struct satisfies. bootTLS is the provisional TLS slot (-8(FS)) holding
+// &bootG, installed by cpuinit_amd64.s.
+var (
+	bootG   [512]byte
+	bootTLS [2]uintptr
+)
+
 // earlyInit runs on the bootstrap stack before the Go runtime exists: no
 // goroutine, no TLS, no stack growth. It and everything it calls must be
 // nosplit and free of allocation.
