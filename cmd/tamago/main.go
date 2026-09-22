@@ -75,17 +75,24 @@ func main() {
 		version = strings.Join(parts, ".")
 	}
 	version = strings.TrimPrefix(version, "v")
-	version = "tamago-go" + version
 
-	root, err := goroot(version)
+	// l4re-native fork: the toolchain is fetched from the mynetz/tamago-go
+	// fork, branch tamago<X.Y.Z>-l4re, which adds the runtime/goos.SetTLS
+	// hook required by non-Linux user space targets (user/l4re). The
+	// cache directory carries an -l4re suffix so it can coexist with an
+	// upstream SDK of the same version.
+	branch := "tamago" + version + "-l4re"
+	cacheKey := "tamago-go" + version + "-l4re"
+
+	root, err := goroot(cacheKey)
 	if err != nil {
 		log.Fatalf("tamago: %v", err)
 	}
 
 	gobin := filepath.Join(root, "bin", "go"+exe())
 	if _, err := os.Stat(gobin); err != nil {
-		fmt.Printf("tamago: installing %s...\n", version)
-		if err := install(root, version); err != nil {
+		fmt.Printf("tamago: installing %s...\n", cacheKey)
+		if err := install(root, branch); err != nil {
 			log.Fatalf("tamago: %v", err)
 		}
 	}
@@ -105,7 +112,7 @@ func install(root, tag string) error {
 	os.Unsetenv(key)
 	defer os.Setenv(key, val)
 
-	cmd := exec.Command("git", "clone", "--depth=1", "--branch="+tag, "https://github.com/usbarmory/tamago-go", root)
+	cmd := exec.Command("git", "clone", "--depth=1", "--branch="+tag, "https://github.com/mynetz/tamago-go", root)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	cmd.Dir = root

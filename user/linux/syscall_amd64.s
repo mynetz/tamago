@@ -16,6 +16,8 @@
 #define SYS_exit		60
 #define SYS_clock_gettime	228
 #define SYS_getrandom		318
+#define SYS_arch_prctl		158
+#define ARCH_SET_FS		0x1002
 
 TEXT cpuinit(SB),NOSPLIT|NOFRAME,$0
 	MOVQ	runtime∕goos·RamStart(SB), DI
@@ -78,4 +80,16 @@ TEXT ·sys_getrandom(SB), $0-32
 	MOVL	$0, DX
 	MOVL	$SYS_getrandom, AX
 	SYSCALL
+	RET
+
+// setTLS installs FS_BASE = DI for the calling thread via
+// arch_prctl(ARCH_SET_FS), see runtime/goos.SetTLS.
+TEXT setTLS(SB),NOSPLIT|NOFRAME,$0
+	MOVQ	DI, SI
+	MOVQ	$ARCH_SET_FS, DI
+	MOVQ	$SYS_arch_prctl, AX
+	SYSCALL
+	CMPQ	AX, $0xfffffffffffff001
+	JLS	2(PC)
+	MOVL	$0xf1, 0xf1	// crash
 	RET

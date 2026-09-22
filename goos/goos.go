@@ -55,6 +55,24 @@ var (
 // first instruction set executed.
 func CPUInit()
 
+// SetTLS installs the thread local storage base for the calling thread.
+//
+// It is invoked by the Go runtime only on architectures whose Go ABI keeps
+// the current goroutine in thread local storage and only when the program
+// runs under a supervising kernel that must perform the installation on the
+// program's behalf: on amd64 at CPL != 0 (user space), where FS_BASE cannot
+// be written directly. Bare metal targets (CPL 0) and architectures that
+// keep g in a dedicated register (arm, arm64, riscv64, loong64) never call
+// it.
+//
+// The hook runs before the World is started, with no goroutine and no TLS
+// available. It must be defined using Go's Assembler (NOSPLIT, no Go calls)
+// and may clobber only caller-saved scratch registers. On amd64 the base,
+// already biased for the -8(FS) convention, is passed in DI.
+//
+// The Linux user space implementation performs arch_prctl(ARCH_SET_FS).
+func SetTLS(base uintptr)
+
 // Hwinit0 takes care of the lower level initialization triggered before
 // runtime setup (pre World start).
 //
